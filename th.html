@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Математический тир - Мгновенное обновление</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 40px;
+            padding: 30px;
+            max-width: 1000px;
+            width: 100%;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            text-align: center;
+            color: #764ba2;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        /* Вопрос */
+        .question-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 30px;
+            margin: 20px 0 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .question-text {
+            color: white;
+            font-size: 3em;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .question-label {
+            color: rgba(255,255,255,0.8);
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        /* Статистика */
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            background: #f0f3ff;
+            padding: 20px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .stat-item {
+            flex: 1;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #764ba2;
+        }
+
+        /* Поле для стрельбы */
+        .shooting-range {
+            position: relative;
+            background: #1a1a2e;
+            border-radius: 30px;
+            padding: 20px;
+            min-height: 400px;
+            margin: 20px 0;
+            border: 3px solid #f093fb;
+            overflow: hidden;
+        }
+
+        /* Мишени */
+        .target {
+            position: absolute;
+            width: 90px;
+            height: 90px;
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #c92a2a);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 2.2em;
+            cursor: crosshair;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+            border: 4px solid white;
+            animation: float 2s ease-in-out infinite;
+            transition: transform 0.1s;
+            z-index: 10;
+        }
+
+        .target:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.8);
+        }
+
+        /* Таймер над мишенью */
+        .target-timer {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 1em;
+            font-weight: bold;
+            white-space: nowrap;
+            border: 2px solid #ff6b6b;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Анимация попадания */
+        .target.hit {
+            animation: hit 0.3s ease-out forwards;
+        }
+
+        @keyframes hit {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        /* Сообщение */
+        .feedback {
+            text-align: center;
+            font-size: 1.5em;
+            padding: 15px;
+            border-radius: 50px;
+            margin: 20px 0;
+            font-weight: bold;
+            animation: slideIn 0.3s;
+        }
+
+        .feedback.correct {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .feedback.wrong {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .feedback.timeout {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeeba;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Кнопки */
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102,126,234,0.4);
+        }
+
+        .btn-danger {
+            background: #f5576c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #f093fb;
+            transform: translateY(-3px);
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+            transform: translateY(-3px);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .hint {
+            text-align: center;
+            color: #666;
+            margin-top: 10px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🔫 Математический тир ⏱️</h1>
+
+        <!-- Статистика -->
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-label">💥 Счет</div>
+                <div class="stat-value" id="score">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">✅ Попаданий</div>
+                <div class="stat-value" id="correct">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">⏱️ Пропущено</div>
+                <div class="stat-value" id="missed">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">🎯 Осталось</div>
+                <div class="stat-value" id="remaining">0</div>
+            </div>
+        </div>
+
+        <!-- Текущий вопрос -->
+        <div class="question-box">
+            <div class="question-label">Найди правильный ответ:</div>
+            <div class="question-text" id="question">5 + 3 = ?</div>
+        </div>
+
+        <!-- Поле для стрельбы -->
+        <div class="shooting-range" id="shootingRange" onclick="shoot(event)">
+            <!-- Мишени появятся здесь -->
+        </div>
+
+        <!-- Обратная связь -->
+        <div id="feedback" class="feedback" style="display: none;"></div>
+
+        <!-- Управление -->
+        <div class="controls">
+            <button class="btn btn-success" onclick="startGame()">▶ Старт</button>
+            <button class="btn btn-primary" onclick="nextRound()">🎲 Следующий раунд</button>
+            <button class="btn btn-danger" onclick="resetGame()">🔄 Сброс</button>
+        </div>
+
+        <div class="hint">
+            ⏱️ Мишени исчезают через 5 секунд! Попал в правильный ответ - сразу новый пример!
+        </div>
+    </div>
+
+    <script>
+        // Состояние игры
+        let score = 0;
+        let correct = 0;
+        let missed = 0;
+        let gameActive = false;
+        let currentQuestion = {
+            text: '',
+            answer: 0
+        };
+        let targets = [];
+        let targetTimeouts = [];
+
+        // Функция создания нового примера
+        function generateQuestion() {
+            const operations = ['+', '-', '×'];
+            const op = operations[Math.floor(Math.random() * operations.length)];
+            
+            let num1, num2, answer, text;
+            
+            switch(op) {
+                case '+':
+                    num1 = Math.floor(Math.random() * 20) + 1;
+                    num2 = Math.floor(Math.random() * 20) + 1;
+                    answer = num1 + num2;
+                    text = `${num1} + ${num2} = ?`;
+                    break;
+                case '-':
+                    num1 = Math.floor(Math.random() * 20) + 10;
+                    num2 = Math.floor(Math.random() * num1) + 1;
+                    answer = num1 - num2;
+                    text = `${num1} - ${num2} = ?`;
+                    break;
+                case '×':
+                    num1 = Math.floor(Math.random() * 9) + 1;
+                    num2 = Math.floor(Math.random() * 9) + 1;
+                    answer = num1 * num2;
+                    text = `${num1} × ${num2} = ?`;
+                    break;
+            }
+            
+            return { text, answer };
+        }
+
+        // Очистка всех таймеров
+        function clearAllTimeouts() {
+            targetTimeouts.forEach(timeout => clearTimeout(timeout));
+            targetTimeouts = [];
+        }
+
+        // Создание мишеней
+        function createTargets() {
+            // Очищаем поле и таймеры
+            document.querySelectorAll('.target').forEach(t => t.remove());
+            clearAllTimeouts();
+            
+            targets = [];
+            
+            const range = document.getElementById('shootingRange');
+            const rangeWidth = range.offsetWidth;
+            const rangeHeight = range.offsetHeight;
+            
+            // Генерируем новый вопрос
+            currentQuestion = generateQuestion();
+            document.getElementById('question').textContent = currentQuestion.text;
+            
+            // Создаем массив с числами (правильный ответ + случайные)
+            const numbers = [currentQuestion.answer];
+            
+            // Добавляем случайные числа
+            while (numbers.length < 6) {
+                let randomNum;
+                if (currentQuestion.answer <= 10) {
+                    randomNum = Math.floor(Math.random() * 20) + 1;
+                } else {
+                    randomNum = Math.floor(Math.random() * 30) + 1;
+                }
+                
+                if (!numbers.includes(randomNum)) {
+                    numbers.push(randomNum);
+                }
+            }
+            
+            // Перемешиваем
+            numbers.sort(() => Math.random() - 0.5);
+            
+            // Создаем мишени
+            numbers.forEach((num) => {
+                const target = document.createElement('div');
+                target.className = 'target';
+                target.textContent = num;
+                target.dataset.value = num;
+                
+                // Случайная позиция
+                const left = 50 + Math.random() * (rangeWidth - 180);
+                const top = 50 + Math.random() * (rangeHeight - 180);
+                
+                target.style.left = left + 'px';
+                target.style.top = top + 'px';
+                
+                // Добавляем таймер над мишенью
+                const timer = document.createElement('div');
+                timer.className = 'target-timer';
+                timer.textContent = '5s';
+                target.appendChild(timer);
+                
+                range.appendChild(target);
+                targets.push(target);
+                
+                // Устанавливаем таймер на исчезновение (5 секунд)
+                const timeout = setTimeout(() => {
+                    if (target.parentNode) {
+                        // Проверяем, правильная ли это мишень
+                        const isCorrect = (num === currentQuestion.answer);
+                        
+                        target.classList.add('expire');
+                        
+                        setTimeout(() => {
+                            if (target.parentNode) {
+                                target.remove();
+                                targets = targets.filter(t => t !== target);
+                                
+                                // Если это была правильная мишень и игра активна
+                                if (isCorrect && gameActive) {
+                                    missed++;
+                                    score = Math.max(0, score - 5);
+                                    showFeedback('⏱️ Правильный ответ исчез! -5', 'timeout');
+                                    updateStats();
+                                    
+                                    // Создаем новый раунд, если правильная мишень исчезла
+                                    if (gameActive) {
+                                        setTimeout(() => {
+                                            if (gameActive) {
+                                                createTargets();
+                                            }
+                                        }, 500);
+                                    }
+                                }
+                                
+                                document.getElementById('remaining').textContent = targets.length;
+                            }
+                        }, 500);
+                    }
+                }, 5000); // 5 секунд
+                
+                targetTimeouts.push(timeout);
+                
+                // Обновляем таймер визуально каждую секунду
+                let timeLeft = 5;
+                const timerInterval = setInterval(() => {
+                    if (!target.parentNode) {
+                        clearInterval(timerInterval);
+                        return;
+                    }
+                    
+                    timeLeft--;
+                    const timerElement = target.querySelector('.target-timer');
+                    if (timerElement) {
+                        timerElement.textContent = timeLeft + 's';
+                        
+                        // Меняем цвет таймера
+                        if (timeLeft <= 2) {
+                            timerElement.style.background = '#f44336';
+                            timerElement.style.borderColor = '#ff0000';
+                        } else if (timeLeft <= 3) {
+                            timerElement.style.background = '#ff9800';
+                            timerElement.style.borderColor = '#ff9800';
+                        }
+                    }
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(timerInterval);
+                    }
+                }, 1000);
+            });
+            
+            document.getElementById('remaining').textContent = targets.length;
+        }
+
+        // Обработка выстрела
+        function shoot(event) {
+            if (!gameActive) {
+                showFeedback('⚠️ Нажми "Старт" чтобы начать!', 'wrong');
+                return;
+            }
+            
+            const target = event.target.closest('.target');
+            
+            if (!target) {
+                showFeedback('💨 Мимо!', 'wrong');
+                return;
+            }
+            
+            const value = parseInt(target.dataset.value);
+            
+            // Проверяем ответ
+            if (value === currentQuestion.answer) {
+                // Попал в правильную
+                score += 10;
+                correct++;
+                
+                target.classList.add('hit');
+                showFeedback('🎯 ТОЧНО! +10', 'correct');
+                
+                // Удаляем мишень
+                setTimeout(() => {
+                    if (target.parentNode) {
+                        target.remove();
+                        targets = targets.filter(t => t !== target);
+                        document.getElementById('remaining').textContent = targets.length;
+                    }
+                }, 300);
+                
+                updateStats();
+                
+                // СОЗДАЕМ НОВЫЙ РАУНД СРАЗУ ПОСЛЕ ПОПАДАНИЯ!
+                setTimeout(() => {
+                    if (gameActive) {
+                        createTargets();
+                    }
+                }, 400); // Небольшая задержка, чтобы увидеть анимацию попадания
+                
+            } else {
+                // Попал в неправильную
+                score = Math.max(0, score - 5);
+                
+                target.classList.add('hit');
+                showFeedback('❌ Неправильно! -5', 'wrong');
+                
+                setTimeout(() => {
+                    if (target.parentNode) {
+                        target.remove();
+                        targets = targets.filter(t => t !== target);
+                        document.getElementById('remaining').textContent = targets.length;
+                    }
+                }, 300);
+                
+                updateStats();
+            }
+        }
+
+        // Показ сообщения
+        function showFeedback(message, type) {
+            const feedback = document.getElementById('feedback');
+            feedback.textContent = message;
+            feedback.className = `feedback ${type}`;
+            feedback.style.display = 'block';
+            setTimeout(() => feedback.style.display = 'none', 1500);
+        }
+
+        // Обновление статистики
+        function updateStats() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('correct').textContent = correct;
+            document.getElementById('missed').textContent = missed;
+            document.getElementById('remaining').textContent = targets.length;
+        }
+
+        // Следующий раунд (ручной)
+        function nextRound() {
+            if (!gameActive) return;
+            createTargets();
+        }
+
+        // Старт игры
+        function startGame() {
+            gameActive = true;
+            resetGame();
+            showFeedback('🔫 Игра началась! У тебя 5 секунд на мишень', 'correct');
+        }
+
+        // Сброс игры
+        function resetGame() {
+            score = 0;
+            correct = 0;
+            missed = 0;
+            updateStats();
+            createTargets();
+        }
+
+        // Подсказка на поле
+        const range = document.getElementById('shootingRange');
+        const hint = document.createElement('div');
+        hint.style.cssText = `
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.7);
+            font-size: 1.1em;
+            pointer-events: none;
+            background: rgba(0,0,0,0.6);
+            padding: 8px 20px;
+            border-radius: 50px;
+            z-index: 100;
+            border: 1px solid #f093fb;
+        `;
+        hint.textContent = '👇 Стреляй в правильный ответ 👇';
+        range.appendChild(hint);
+    </script>
+</body>
+</html>
